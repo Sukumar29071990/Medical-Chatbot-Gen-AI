@@ -1,0 +1,43 @@
+from langchain.document_loaders import PyPDFLoader, DirectoryLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from typing import List
+from langchain.schema import Document   
+from langchain.embeddings import HuggingFaceEmbeddings
+
+
+def load_pdf_file(directory_path):
+    # Load all PDF files from the specified directory
+    loader = DirectoryLoader(directory_path, glob="*.pdf", loader_cls=PyPDFLoader)
+    documents = loader.load() 
+    return documents
+
+def filter_to_minimal_docs(docs: List[Document]) -> List[Document]:
+    """
+    Given a list of Document objects, return a new list of Document objects
+    containing only 'source' in metadata and the original page_content.
+    """
+    minimal_docs: List[Document] = []
+    for doc in docs:
+        src = doc.metadata.get("source")
+        minimal_docs.append(
+            Document(
+                page_content=doc.page_content,
+                metadata={"source": src}
+            )
+        )
+    return minimal_docs
+
+def text_spliter(minimal_docs_data):
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=500,
+        chunk_overlap=20,
+    )
+    text_chunks = text_splitter.split_documents(minimal_docs_data)
+    return text_chunks
+
+def download_hugging_face_embeddings():
+    """
+    Download and return the HuggingFace embeddings model.
+   """
+    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    return embeddings
